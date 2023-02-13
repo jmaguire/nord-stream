@@ -8,6 +8,7 @@ import simplekml
 import numpy as np
 from multiprocessing import  Pool
 
+# General parallel execution of a function func for data frame df
 def parallelize_dataframe(df, func, n_cores=8):
     df_split = np.array_split(df, n_cores)
     pool = Pool(n_cores)
@@ -16,6 +17,7 @@ def parallelize_dataframe(df, func, n_cores=8):
     pool.join()
     return df
 
+# Create point / time data for each ship
 def pivot_data(df):
     ship_dict = {}
     for index, row in df.iterrows():
@@ -31,24 +33,20 @@ def pivot_data(df):
             ship_dict[key] = [entry]
     return ship_dict
 
+# Take a data frame and extract rows in NS1 or NS2
 def filter_rows(df):
     points = df.iloc[:,3:5]
     df['Inside NS1'] = points.apply(algos.inside_ns1, axis = 1)
     df['Inside NS2'] = points.apply(algos.inside_ns2, axis = 1)
     return df.loc[(df['Inside NS1'] == 1) | (df['Inside NS2'] == 1)]    
 
+# Dump KML lines per ship
 def pivot_data_to_kml(ship_dict):
     kml = simplekml.Kml()
     for key in ship_dict:
         linestring = kml.newlinestring(name=key)
         linestring.coords = [(elem['point']['longitude'], elem['point']['latitude']) for elem in ship_dict[key]]
     kml.save('sample.kml')
-
-def process_frame(df):
-    points = df.iloc[:,3:5]
-    df['Inside NS1'] = points.apply(algos.inside_ns1, axis = 1)
-    df['Inside NS2'] = points.apply(algos.inside_ns2, axis = 1)
-    return df.loc[(df['Inside NS1'] == 1) | (df['Inside NS2'] == 1)]    
 
 def main():
     parser = argparse.ArgumentParser()
@@ -61,25 +59,25 @@ def main():
     if not args.file:
         parser.print_usage()
         return sys.exit(1)
-
-    print(args.file)
+   
     start_time = time.time()
     df = pd.read_csv(args.file)
     end_time = time.time()
     print("Read file: ", (end_time-start_time), "seconds")
+    
+    # Old single threaded code
+    # start_time = time.time()
+    # filtered_data = filter_rows(df)
+    # end_time = time.time()
+    # print("Filtered file: ", (end_time-start_time), "seconds", "size", filtered_data.size )
+    
     start_time = time.time()
-    filtered_data = filter_rows(df)
+    filtered_data = parallelize_dataframe(df, filter_rows) 
     end_time = time.time()
-    print("Filtered file: ", (end_time-start_time), "seconds", "size", filtered_data.size )
-    start_time = time.time()
-    filtered_parallel = parallelize_dataframe(df, filter_rows) 
-    end_time = time.time()
-    print("Filtered file parallel: ", (end_time-start_time), "seconds", "size", filtered_parallel.size)
+    print("Filtered file parallel: ", (end_time-start_time), "seconds", "size", filtered_data.size)
 
-    start_time = time.time()
+    ## From here on the processing time takes milliseconds
     points_data = pivot_data(filtered_data)
-    end_time = time.time()
-    print("Generated points file: ", (end_time-start_time), "seconds")
     with open("sample.json", "w") as f:
         json.dump(points_data, f)
     
