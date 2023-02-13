@@ -1,1 +1,4 @@
 *.csv
+*.kml
+*.json
+*.pyc

@@ -7,8 +7,13 @@ import time
 import simplekml
 import numpy as np
 from multiprocessing import  Pool
+from pathlib import Path
 
 CORES = 10
+SAVE_CSV = False
+SAVE_KML = True
+SAVE_JSON= True
+
 
 # General parallel execution of a function func for data frame df
 def parallelize_dataframe(df, func, n_cores=CORES):
@@ -48,7 +53,7 @@ def pivot_data_to_kml(ship_dict):
     for key in ship_dict:
         linestring = kml.newlinestring(name=key)
         linestring.coords = [(elem['point']['longitude'], elem['point']['latitude']) for elem in ship_dict[key]]
-    kml.save('sample.kml')
+    return kml
 
 def main():
     parser = argparse.ArgumentParser()
@@ -62,6 +67,7 @@ def main():
         parser.print_usage()
         return sys.exit(1)
    
+    file_stem = Path(args.file).stem
     # Read data as a dataframe. This can be converted to dask
     # for files that are too big for RAM
     start_time = time.time()
@@ -85,9 +91,16 @@ def main():
     # From here on the processing time takes milliseconds..
     # Pivot to group by MMSI and generate KML
     points_data = pivot_data(filtered_data)
-    pivot_data_to_kml(points_data)
-    with open("sample.json", "w") as f:
-        json.dump(points_data, f)
+    kml_data = pivot_data_to_kml(points_data)
+
+    ## Save shit
+    if SAVE_KML:
+        kml_data.save(file_stem + '_filtered.kml')
+    if SAVE_CSV:
+        filtered_data.to_csv(file_stem + '_filtered.csv')
+    if SAVE_JSON:
+        with open(file_stem + '_filtered.json', "w") as f:
+            json.dump(points_data, f)
     
 if __name__ == '__main__':
     main()
