@@ -1,7 +1,3 @@
-from numba import jit, njit
-import numba
-import numpy as np 
-
 #-------------------------------------------------------------------------------
 # This function gives the answer whether the given point is inside or outside the predefined polygon
 # Unlike standard ray-casting algorithm, this one works on edges! (with no performance cost)
@@ -17,7 +13,29 @@ import numpy as np
 # 1 - the point is inside the polygon 
 # 2 - the point is one edge (boundary)
 
-@jit(nopython=True)
+# NS1
+# 55°34'43.52"N,  15°38'23.91"E or 55.578756, 15.639975
+# 55°34'53.35"N,  15°50'24.88"E or 55.581486, 15.840244
+# 55°30'28.29"N,  15°51'1.13"E or 55.507858, 15.850314
+# 55°30'22.80"N,  15°38'31.49"E or 55.506333, 15.642081
+
+# NS2
+# 54°53'25.49"N, 15°23'2.84"E or 54.890414, 15.384122
+# 54°53'27.87"N, 15°25'52.74"E or 54.891075, 15.431317
+# 54°51'47.88"N, 15°26'1.47"E or 54.863300, 15.433742
+# 54°51'47.36"N, 15°23'8.64"E or 54.863156, 15.385733
+
+NS1_polygon = [(55.578756, 15.639975), (55.581486, 15.840244),
+               (55.507858, 15.850314), (55.506333, 15.642081), (55.578756, 15.639975)]
+NS2_polygon = [(54.890414, 15.384122), (54.891075, 15.431317),
+               (54.863300, 15.433742), (54.863156, 15.385733), (54.890414, 15.384122)]
+
+def inside_ns1(point):
+    return is_inside_sm(NS1_polygon, point)
+
+def inside_ns2(point):
+    return is_inside_sm(NS2_polygon, point)
+
 def is_inside_sm(polygon, point):
     length = len(polygon)-1
     dy2 = point[1] - polygon[0][1]
@@ -50,12 +68,3 @@ def is_inside_sm(polygon, point):
 
     #print 'intersections =', intersections
     return intersections & 1  
-
-
-@njit(parallel=True)
-def is_inside_sm_parallel(points, polygon):
-    ln = len(points)
-    D = np.empty(ln, dtype=numba.boolean) 
-    for i in numba.prange(ln):
-        D[i] = is_inside_sm(polygon,points[i])
-    return D  
