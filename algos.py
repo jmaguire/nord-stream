@@ -1,4 +1,5 @@
 #-------------------------------------------------------------------------------
+# Source: https://github.com/sasamil/PointInPolygon_Py/blob/master/pointInside.py by https://github.com/sasamil
 # This function gives the answer whether the given point is inside or outside the predefined polygon
 # Unlike standard ray-casting algorithm, this one works on edges! (with no performance cost)
 # According to performance tests - this is the best variant.
@@ -12,7 +13,10 @@
 # 0 - the point is outside the polygon
 # 1 - the point is inside the polygon 
 # 2 - the point is one edge (boundary)
+#-------------------------------------------------------------------------------
 
+#-------------------------------------------------------------------------------
+# Customization for NS1 and NS2 boundary box detection
 # NS1
 # 55°34'43.52"N,  15°38'23.91"E or 55.578756, 15.639975
 # 55°34'53.35"N,  15°50'24.88"E or 55.581486, 15.840244
@@ -35,6 +39,7 @@ def inside_ns1(point):
 
 def inside_ns2(point):
     return is_inside_sm(NS2_polygon, point)
+#-------------------------------------------------------------------------------
 
 def is_inside_sm(polygon, point):
     length = len(polygon)-1
