@@ -8,8 +8,10 @@ import simplekml
 import numpy as np
 from multiprocessing import  Pool
 
+CORES = 10
+
 # General parallel execution of a function func for data frame df
-def parallelize_dataframe(df, func, n_cores=8):
+def parallelize_dataframe(df, func, n_cores=CORES):
     df_split = np.array_split(df, n_cores)
     pool = Pool(n_cores)
     df = pd.concat(pool.map(func, df_split))
@@ -60,6 +62,8 @@ def main():
         parser.print_usage()
         return sys.exit(1)
    
+    # Read data as a dataframe. This can be converted to dask
+    # for files that are too big for RAM
     start_time = time.time()
     df = pd.read_csv(args.file)
     end_time = time.time()
@@ -69,15 +73,19 @@ def main():
     # start_time = time.time()
     # filtered_data = filter_rows(df)
     # end_time = time.time()
-    # print("Filtered file: ", (end_time-start_time), "seconds", "size", filtered_data.size )
+    # print("Filtered file: ", (end_time-start_time), "seconds", "size", filtered_data.shape[0] )
     
+    # Apply filter function to chunks in parallel
+    # filters to rows in NS1 and NS2
     start_time = time.time()
     filtered_data = parallelize_dataframe(df, filter_rows) 
     end_time = time.time()
-    print("Filtered file parallel: ", (end_time-start_time), "seconds", "size", filtered_data.size)
+    print("Filtered file parallel: ", (end_time-start_time), "seconds", "size", filtered_data.shape[0])
 
-    ## From here on the processing time takes milliseconds
+    # From here on the processing time takes milliseconds..
+    # Pivot to group by MMSI and generate KML
     points_data = pivot_data(filtered_data)
+    pivot_data_to_kml(points_data)
     with open("sample.json", "w") as f:
         json.dump(points_data, f)
     
