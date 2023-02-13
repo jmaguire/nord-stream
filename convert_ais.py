@@ -9,7 +9,7 @@ import numpy as np
 from multiprocessing import  Pool
 from pathlib import Path
 
-CORES = 10
+CORES = 8
 SAVE_CSV = False
 SAVE_KML = True
 SAVE_JSON= True
