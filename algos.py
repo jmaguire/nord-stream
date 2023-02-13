@@ -2,6 +2,21 @@ from numba import jit, njit
 import numba
 import numpy as np 
 
+#-------------------------------------------------------------------------------
+# This function gives the answer whether the given point is inside or outside the predefined polygon
+# Unlike standard ray-casting algorithm, this one works on edges! (with no performance cost)
+# According to performance tests - this is the best variant.
+
+# arguments:
+# Polygon - searched polygon
+# Point - an arbitrary point that can be inside or outside the polygon
+# length - the number of point in polygon (Attention! The list itself has an additional member - the last point coincides with the first)
+
+# return value:
+# 0 - the point is outside the polygon
+# 1 - the point is inside the polygon 
+# 2 - the point is one edge (boundary)
+
 @jit(nopython=True)
 def is_inside_sm(polygon, point):
     length = len(polygon)-1
