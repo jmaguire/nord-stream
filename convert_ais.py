@@ -10,10 +10,11 @@ from multiprocessing import  Pool
 from pathlib import Path
 
 CORES = 8
-SAVE_CSV = False
+SAVE_CSV = True
 SAVE_KML = True
 SAVE_JSON= True
-
+OUTPUT = './output/'
+FILETRACKER = 'processed.json'
 
 # General parallel execution of a function func for data frame df
 def parallelize_dataframe(df, func, n_cores=CORES):
@@ -55,32 +56,16 @@ def pivot_data_to_kml(ship_dict):
         linestring.coords = [(elem['point']['longitude'], elem['point']['latitude']) for elem in ship_dict[key]]
     return kml
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-f', '--file',
-        help='ais file',
-    )
-    args = parser.parse_args()
 
-    if not args.file:
-        parser.print_usage()
-        return sys.exit(1)
-   
-    file_stem = Path(args.file).stem
+def process_file(filepath, save_kml = SAVE_KML, save_csv = SAVE_CSV, save_json = SAVE_JSON):
+
     # Read data as a dataframe. This can be converted to dask
     # for files that are too big for RAM
     start_time = time.time()
-    df = pd.read_csv(args.file)
+    df = pd.read_csv(filepath)
     end_time = time.time()
     print("Read file: ", (end_time-start_time), "seconds")
-    
-    # Old single threaded code
-    # start_time = time.time()
-    # filtered_data = filter_rows(df)
-    # end_time = time.time()
-    # print("Filtered file: ", (end_time-start_time), "seconds", "size", filtered_data.shape[0] )
-    
+
     # Apply filter function to chunks in parallel
     # filters to rows in NS1 and NS2
     start_time = time.time()
@@ -94,13 +79,60 @@ def main():
     kml_data = pivot_data_to_kml(points_data)
 
     ## Save shit
-    if SAVE_KML:
+    file_stem = OUTPUT + Path(filepath).stem
+    if save_kml:
         kml_data.save(file_stem + '_filtered.kml')
-    if SAVE_CSV:
+    if save_csv:
         filtered_data.to_csv(file_stem + '_filtered.csv')
-    if SAVE_JSON:
+    if save_json:
         with open(file_stem + '_filtered.json', "w") as f:
             json.dump(points_data, f)
+
+def process_directory(directory, files_processed):
+    for filepath in Path(directory).glob('*.csv'):
+        if str(filepath) in files_processed:
+            continue
+        print('Processing', filepath)
+        df = pd.read_csv(filepath)
+        filtered_data = parallelize_dataframe(df, filter_rows)
+
+        file_stem = OUTPUT + Path(filepath).stem
+        filtered_data.to_csv(file_stem + '_filtered.csv')
+        
+        # Save data each successful loop
+        files_processed.append(str(filepath))
+        with open(FILETRACKER, 'w') as f:
+            json.dump(files_processed, f)
+
+def main():
+
+    files_processed = []
+    if Path(FILETRACKER).is_file():
+        with open(FILETRACKER, 'r') as f:
+            files_processed = json.load(f)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-f', '--file',
+        help='ais file',
+    )
+    parser.add_argument(
+        '-d', '--directory',
+        help='ais directory',
+    )
+    args = parser.parse_args()
+
+    if args.file:
+        process_file(args.file)
+    elif args.directory:
+        print('Processing directory. We have already processed:',files_processed)
+        process_directory(args.directory, files_processed)
+    else:
+        parser.print_usage()
+        return sys.exit(1)
+    
+
+    
     
 if __name__ == '__main__':
     main()
