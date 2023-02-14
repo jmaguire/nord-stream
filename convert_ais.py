@@ -8,6 +8,7 @@ import simplekml
 import numpy as np
 from multiprocessing import  Pool
 from pathlib import Path
+import helper as helper
 
 CORES = 8
 SAVE_CSV = True
@@ -43,7 +44,7 @@ def pivot_data(df):
 
 # Take a data frame and extract rows in NS1 or NS2
 def filter_rows(df):
-    points = df.iloc[:,3:5]
+    points = df.loc[:,'Latitude':'Longitude']
     df['Inside NS1'] = points.apply(algos.inside_ns1, axis = 1)
     df['Inside NS2'] = points.apply(algos.inside_ns2, axis = 1)
     return df.loc[(df['Inside NS1'] == 1) | (df['Inside NS2'] == 1)]    
@@ -64,7 +65,7 @@ def process_file(filepath, save_kml = SAVE_KML, save_csv = SAVE_CSV, save_json =
     start_time = time.time()
     df = pd.read_csv(filepath)
     end_time = time.time()
-    print("Read file: ", (end_time-start_time), "seconds")
+    print("Read file: ", (end_time-start_time), "seconds", df.shape[0])
 
     # Apply filter function to chunks in parallel
     # filters to rows in NS1 and NS2
@@ -83,7 +84,7 @@ def process_file(filepath, save_kml = SAVE_KML, save_csv = SAVE_CSV, save_json =
     if save_kml:
         kml_data.save(file_stem + '_filtered.kml')
     if save_csv:
-        filtered_data.to_csv(file_stem + '_filtered.csv')
+        filtered_data.to_csv(file_stem + '_filtered.csv', index=False)
     if save_json:
         with open(file_stem + '_filtered.json', "w") as f:
             json.dump(points_data, f)
@@ -97,12 +98,21 @@ def process_directory(directory, files_processed):
         filtered_data = parallelize_dataframe(df, filter_rows)
 
         file_stem = OUTPUT + Path(filepath).stem
-        filtered_data.to_csv(file_stem + '_filtered.csv')
+        filtered_data.to_csv(file_stem + '_filtered.csv', index=False)
         
         # Save data each successful loop
         files_processed.append(str(filepath))
         with open(FILETRACKER, 'w') as f:
             json.dump(files_processed, f)
+
+def merge_and_process(directory):
+    merged_df = helper.merge_files(directory)
+    merged_df = helper.sort_by_time(merged_df)
+    merged_df.to_csv(directory + '/filtered_data.csv', index=False)
+    merged_pivoted = pivot_data(merged_df)
+    merged_kml = pivot_data_to_kml(merged_pivoted)
+    helper.save_analysis(merged_pivoted, directory + '/filtered_analysis.csv' )
+    merged_kml.save(directory + '/filtered_data.kml')
 
 def main():
 
@@ -114,12 +124,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-f', '--file',
-        help='ais file',
+        help='ais file to filter',
     )
     parser.add_argument(
         '-d', '--directory',
-        help='ais directory',
+        help='ais directory to filter',
     )
+    parser.add_argument(
+        '-merge', '--merge_directory',
+        help='ais directory to merge',
+    )
+
     args = parser.parse_args()
 
     if args.file:
@@ -127,12 +142,12 @@ def main():
     elif args.directory:
         print('Processing directory. We have already processed:',files_processed)
         process_directory(args.directory, files_processed)
+    elif args.merge_directory:
+        print('Merging directory')
+        merge_and_process(args.merge_directory)
     else:
         parser.print_usage()
         return sys.exit(1)
-    
-
-    
-    
+   
 if __name__ == '__main__':
     main()
