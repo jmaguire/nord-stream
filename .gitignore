@@ -2,3 +2,6 @@
 *.kml
 *.json
 *.pyc
+data/*
+output/*
+*.zip
