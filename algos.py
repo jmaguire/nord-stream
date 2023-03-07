@@ -30,6 +30,17 @@
 # 54°51'47.88"N, 15°26'1.47"E or 54.863300, 15.433742
 # 54°51'47.36"N, 15°23'8.64"E or 54.863156, 15.385733
 
+Rostock_polygon = [
+    (54.2721164, 11.8556471), 
+    (54.1605427, 11.9049145), 
+    (54.2847705, 12.3018863), 
+    (54.3538538, 12.2872045), 
+    (54.4908338, 12.4903187), 
+    (54.5498175, 12.7155384), 
+    (54.6897611, 12.44912), 
+    (54.5737056, 12.3584828), 
+    (54.2721164, 11.8556471)]
+
 NS1_polygon = [
     (55.578756, 15.639975),
     (55.581486, 15.840244),
@@ -52,6 +63,14 @@ NS1_large_polygon = [
     (55.36185, 15.37849),
     (55.70381, 15.37574),
 ]
+
+
+def inside_rostock(point):
+    return is_inside_sm(Rostock_polygon, point)
+
+
+def inside_rostock_exit(point):
+    return is_inside_sm(Rostock_polygon_exit, point)
 
 
 def inside_ns1_large(point):
@@ -86,7 +105,8 @@ def is_inside_sm(polygon, point):
         ):
             # non-horizontal line
             if dy < 0 or dy2 < 0:
-                F = dy * (polygon[jj][0] - polygon[ii][0]) / (dy - dy2) + polygon[ii][0]
+                F = dy * (polygon[jj][0] - polygon[ii][0]) / \
+                    (dy - dy2) + polygon[ii][0]
 
                 # if line is left from the point - the ray moving towards left, will intersect it
                 if point[0] > F:

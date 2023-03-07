@@ -58,8 +58,8 @@ def filter_rows(df):
 # rostock filter!
 def filter_rows_rostock(df):
     points = df.loc[:, "Latitude":"Longitude"]
-    df["Inside Rostock"] = points.apply(algos.inside_rostock_, axis=1)
-    return df.loc[df["Inside Rostock"] == 1]
+    df["Inside Rostock"] = points.apply(algos.inside_rostock, axis=1)
+    return df.loc[(df["Inside Rostock"] == 1)]
 
 # Test for ships that never entered NS1 box but were present just outside of it
 def filter_rows_sneaky(df):
@@ -91,7 +91,6 @@ def process_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_
     # Apply filter function to chunks in parallel
     # filter rows
     start_time = time.time()
-    # filtered_data = parallelize_dataframe(df, filter_rows)
     filtered_data = parallelize_dataframe(df, filter_func)
 
     end_time = time.time()
