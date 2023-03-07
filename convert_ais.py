@@ -19,6 +19,7 @@ OUTPUT = "./output/"
 FILETRACKER = "processed.json"
 COLUMNS = ["MMSI", "Ship type", "Cargo type", "Width",
            "Length", "Latitude", "Longitude", "# Timestamp"]
+SHIP_OF_INTEREST = 211108270
 
 # General parallel execution of a function func for data frame df
 def parallelize_dataframe(df, func, n_cores=CORES):
@@ -61,6 +62,11 @@ def filter_rows_rostock(df):
     df["Inside Rostock"] = points.apply(algos.inside_rostock, axis=1)
     return df.loc[(df["Inside Rostock"] == 1)]
 
+# ship filter
+def filter_rows_ship(df):
+    points = df.loc[:, "Latitude":"Longitude"]
+    return df.loc[(df["MMSI"] == SHIP_OF_INTEREST)]
+
 # Test for ships that never entered NS1 box but were present just outside of it
 def filter_rows_sneaky(df):
     points = df.loc[:, "Latitude":"Longitude"]
@@ -79,13 +85,13 @@ def pivot_data_to_kml(ship_dict):
         ]
     return kml
 
-def process_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_JSON, filter_func=filter_rows_rostock):
+def process_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_JSON, filter_func=filter_rows_ship):
     # Read data as a dataframe. This can be converted to dask
     # for files that are too big for RAM
     start_time = time.time()
     df = pd.read_csv(filepath, usecols=COLUMNS)
     end_time = time.time()
-    print("Read file:", (end_time - start_time), "seconds", df.shape[0])
+    print("Read file:", (end_time - start_time), "seconds")
     print("Rows:", df.shape[0])
 
     # Apply filter function to chunks in parallel
@@ -118,7 +124,7 @@ def process_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_
             json.dump(points_data, f)
 
 
-def process_directory(directory, files_processed, filter_func=filter_rows_rostock):
+def process_directory(directory, files_processed, filter_func=filter_rows_ship):
     for filepath in Path(directory).glob("*.csv"):
         if str(filepath) in files_processed:
             continue
