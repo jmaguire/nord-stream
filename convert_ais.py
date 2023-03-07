@@ -89,7 +89,7 @@ def process_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_
     # Read data as a dataframe. This can be converted to dask
     # for files that are too big for RAM
     start_time = time.time()
-    df = pd.read_csv(filepath, usecols=COLUMNS)
+    df = pd.read_csv(filepath, usecols=COLUMNS, engine="pyarrow")
     end_time = time.time()
     print("Read file:", (end_time - start_time), "seconds")
     print("Rows:", df.shape[0])
@@ -180,10 +180,10 @@ def main():
     args = parser.parse_args()
 
     if args.file:
-        process_file(args.file)
+        process_file(args.file, filter_func=filter_rows_ship)
     elif args.directory:
         print("Processing directory. We have already processed:", files_processed)
-        process_directory(args.directory, files_processed)
+        process_directory(args.directory, files_processed, filter_func=filter_rows_ship)
     elif args.merge_directory:
         print("Merging directory")
         merge_and_process(args.merge_directory)
