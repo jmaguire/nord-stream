@@ -180,10 +180,10 @@ def main():
     args = parser.parse_args()
 
     if args.file:
-        process_file(args.file, filter_func=filter_rows_ship)
+        process_file(args.file, filter_func=filter_rows_rostock)
     elif args.directory:
         print("Processing directory. We have already processed:", files_processed)
-        process_directory(args.directory, files_processed, filter_func=filter_rows_ship)
+        process_directory(args.directory, files_processed, filter_func=filter_rows_rostock)
     elif args.merge_directory:
         print("Merging directory")
         merge_and_process(args.merge_directory)
