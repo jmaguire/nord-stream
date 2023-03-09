@@ -77,8 +77,8 @@ def filter_rows_rostock(df):
 def filter_rows_weick_christianso(df):
     points = df.loc[:, "Latitude":"Longitude"]
     df["Weick"] = points.apply(algos.inside_weick, axis=1)
-    df["Christano"] = points.apply(algos.inside_christianso, axis=1)
-    return df.loc[(df["Weick"] == 1) | (df["Christano"] == 1)]
+    df["Christianso"] = points.apply(algos.inside_christianso, axis=1)
+    return df.loc[(df["Weick"] == 1) | (df["Christianso"] == 1)]
 
 
 # ship filter
