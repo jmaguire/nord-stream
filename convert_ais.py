@@ -67,7 +67,7 @@ def filter_rows_sneaky(df):
     points = df.loc[:, "Latitude":"Longitude"]
     df["Inside NS1"] = points.apply(algos.inside_ns1, axis=1)
     df["Inside NS1_large"] = points.apply(algos.inside_ns1_large, axis=1)
-    return df.loc[(df["Inside NS1"] == 0) | (df["Inside NS1_large"] == 1)]
+    return df.loc[(df["Inside NS1"] == 0) & (df["Inside NS1_large"] == 1)]
 
 
 # Dump KML lines per ship
@@ -82,11 +82,11 @@ def pivot_data_to_kml(ship_dict):
     return kml
 
 
-def process_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_JSON):
+def filter_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_JSON):
     # Read data as a dataframe. This can be converted to dask
     # for files that are too big for RAM
     start_time = time.time()
-    df = pd.read_csv(filepath, usecols=COLUMNS)
+    df = pd.read_csv(filepath, usecols=COLUMNS, engine="pyarrow")
     end_time = time.time()
     print("Read file: ", (end_time - start_time), "seconds", df.shape[0])
 
@@ -120,12 +120,13 @@ def process_file(filepath, save_kml=SAVE_KML, save_csv=SAVE_CSV, save_json=SAVE_
             json.dump(points_data, f)
 
 
-def process_directory(directory, files_processed):
+def filter_directory(directory, files_processed):
     for filepath in Path(directory).glob("*.csv"):
         if str(filepath) in files_processed:
             continue
         print("Processing", filepath)
-        df = pd.read_csv(filepath)
+
+        df = pd.read_csv(filepath, usecols=COLUMNS, engine="pyarrow")
         # filtered_data = parallelize_dataframe(df, filter_rows)
         filtered_data = parallelize_dataframe(df, filter_rows_sneaky)
 
@@ -174,10 +175,10 @@ def main():
     args = parser.parse_args()
 
     if args.file:
-        process_file(args.file)
+        filter_file(args.file)
     elif args.directory:
         print("Processing directory. We have already processed:", files_processed)
-        process_directory(args.directory, files_processed)
+        filter_directory(args.directory, files_processed)
     elif args.merge_directory:
         print("Merging directory")
         merge_and_process(args.merge_directory)
