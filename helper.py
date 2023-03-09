@@ -3,24 +3,14 @@ from pathlib import Path
 import csv
 from scipy import spatial
 import simplekml
-
-COLUMNS = [
-    "MMSI",
-    "Ship type",
-    "Cargo type",
-    "Width",
-    "Length",
-    "Latitude",
-    "Longitude",
-    "# Timestamp",
-]
+import json
 
 
 def merge_files(directory):
     merged_df = pd.DataFrame()
     for filepath in Path(directory).glob("*filtered.csv"):
         print(filepath)
-        df = pd.read_csv(filepath, usecols=COLUMNS, engine="pyarrow")
+        df = pd.read_csv(filepath, engine="pyarrow")
         merged_df = pd.concat([merged_df, df])
     return merged_df
 
@@ -44,7 +34,7 @@ def merge_original_data(directory, slice=["Latitude", "Longitude"]):
     merged_df = pd.DataFrame()
     for filepath in Path(directory).glob("*.csv"):
         print(filepath)
-        df = pd.read_csv(filepath, usecols=COLUMNS, engine="pyarrow")
+        df = pd.read_csv(filepath, engine="pyarrow")
         df = df.loc[:, slice]
         merged_df = pd.concat([merged_df, df])
     # Filter our weird shit outside of europe
@@ -66,3 +56,18 @@ def convex_hull(df, filename="convex_hull.kml"):
     for point in points:
         kml.newpoint(name="Hull Point", coords=[(point[1], point[0])])
     kml.save(filename)
+
+
+def kml_string_converter(kml_str):
+    json_str = (
+        kml_str.strip()
+        .replace("POLYGON ", "")
+        .replace("((", "[[")
+        .replace("))", "]]")
+        .replace(", ", "],[")
+        .replace(" ", ",")
+        .replace(",", ", ")
+    )
+    data = json.loads(json_str)
+    output = [(elem[1], elem[0]) for elem in data]
+    print(output)
