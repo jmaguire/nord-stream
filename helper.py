@@ -4,7 +4,16 @@ import csv
 from scipy import spatial
 import simplekml
 
-COLUMNS = ["MMSI", "Latitude", "Longitude", "# Timestamp"]
+COLUMNS = [
+    "MMSI",
+    "Ship type",
+    "Cargo type",
+    "Width",
+    "Length",
+    "Latitude",
+    "Longitude",
+    "# Timestamp",
+]
 
 
 def merge_files(directory):
